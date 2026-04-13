@@ -3,6 +3,7 @@ from pprint import pprint
 from settings  import token
 
 
+
 class YandexDisk:
 
     def __init__(self, token):
@@ -23,6 +24,7 @@ class YandexDisk:
             print(f"{response.status_code}\nпапка {path_disk} успешно создана ")
             return path_disk
         elif response.status_code == 409:
+            print(f'Папка {path_disk} уже существует')
             pass
         elif response.status_code == 404:
             print(f"{response.status_code} \nНекорректный запрос")
@@ -52,41 +54,22 @@ class YandexDisk:
             print('Error')
             return None
 
-    def add_one_photo(self, photo_url: str, path_disk):
-        """ Загружает фото из интернета по ссылке photo_url по указанному адресу. 
-            path_disk - Необходимо вводить путь в формате: название папки/название загружаемого фото"""
-        self.path_disk = path_disk 
-        self.photo_url = photo_url
-        params = {
-            'url': photo_url,
-            "path": path_disk
-        }
-        url = f'{self.base_url}/resources/upload'
-        response = requests.post(url, params=params, headers=self.headers)
-        if response.status_code == 202:
-            print(f'Фото успешно добавлено в папку {path_disk}')
-        elif response.status_code in range(400, 499):
-            print(f"{response.status_code} \nНекорректный запрос")
-        else:
-            print('Error')      
-        
-    def add_any_photos(self, photo_url: dict):
-        """ Загружает несколько фото из интернета по ссылкам photo_url по указанному адресу. 
-            Данные необходимо передавать в формате словаря: {папка/название: url}"""
-        url = f'{self.base_url}/resources/upload'
-        for breed, url in photo_url.items():
-            params = {
-            'url': url,
-            "path": breed
-        }
-            response = requests.post(url, params=params, headers=self.headers) 
-            if response.status_code == 202:
-               print(f'Фото успешно добавлено в папку {params['path']}')
-            elif response.status_code in range(400, 499):
-               print(f"{response.status_code} \nНекорректный запрос")
-            else:
-               print('Error')  
+    def add_photo(self, photo_url: dict):
+        """Загружает одно или несколько фото из интернета по ссылкам. 
+        Данные необходимо передавать в формате словаря: {папка/название: url}"""
+    
 
+    
+        URL = 'https://cloud-api.yandex.net/v1/disk/resources/upload'
+        for folder, url in photo_url.items():
+            params = {
+                'path': folder,
+                'url': url}
+            
+            response = requests.post(URL, params=params, headers=self.headers)
+            if response.status_code == 202:
+                print(f'Фото успешно загружено по адресу {folder}')
+            
 
 
 
@@ -108,22 +91,32 @@ class Dogs:
 
         url = 'https://dog.ceo/api/breeds/list/all'
         response = requests.get(url).json()
+        url_dict = {}
+        if self.breed in response['message']:
+            if response['message'][self.breed]:
+                
+                for sub_breed in response['message'][f'{self.breed}']:
+                    sub_url = f'https://dog.ceo/api/breed/{self.breed}/{sub_breed}/images/random'
+                    new_resp = requests.get(sub_url).json()
+                    url_dict[f'{self.breed}/{sub_breed}'] = new_resp['message']
+            else:
+                url_dict[f'{self.breed}/{self.breed}'] =  f'https://dog.ceo/api/breed/{self.breed}/images/random'
         
-        if response['message'][f'{self.breed}']:
-            url_dict = {}
-            for sub_breed in response['message'][f'{self.breed}']:
-                sub_url = f'https://dog.ceo/api/breed/{self.breed}/{sub_breed}/images/random'
-                new_resp = requests.get(sub_url).json()
-                url_dict[f'{self.breed}/{sub_breed}'] = new_resp['message']
-            return url_dict
-        else:
-            return f'https://dog.ceo/api/breed/{self.breed}/images/random'
+        if url_dict is not None:
+            return url_dict    
+        
     
         
 
         
 
-dog = Dogs('australian')
+dog = Dogs( "mudhol")
 p = dog.get_photo()
-Y.add_any_photos(p)
+Y.create_folder(dog.breed)
+Y.add_photo(p)
+
+
+
+
+
 
